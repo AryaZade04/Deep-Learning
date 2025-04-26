@@ -1,0 +1,49 @@
+#a. Import the libraries
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.datasets import mnist
+
+#b–e. Load, Normalize, Flatten, One-hot encode
+
+# Load dataset
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+# Normalize pixel values
+x_train = x_train / 255.0
+x_test = x_test / 255.0
+
+# One-hot encode labels
+y_train_cat = to_categorical(y_train, num_classes=10)
+y_test_cat = to_categorical(y_test, num_classes=10)
+
+
+#f. Building the model
+
+model = Sequential([
+    Flatten(input_shape=(28, 28)),       # Flatten 28x28 images to 784 input features
+    Dense(128, activation='relu'),       # First hidden layer
+    Dense(64, activation='relu'),        # Second hidden layer
+    Dense(10, activation='softmax')      # Output layer (10 classes)
+])
+
+#g. Compiling the model
+
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+
+
+#h. Train the model
+model.fit(x_train, y_train_cat,
+          epochs=10,
+          batch_size=32,
+          validation_split=0.2)
+
+
+#i. Evaluate the model
+test_loss, test_acc = model.evaluate(x_test, y_test_cat)
+print(f"\n✅ Test Accuracy: {test_acc:.4f}")
+
