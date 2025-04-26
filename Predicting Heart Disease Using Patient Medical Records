@@ -1,0 +1,109 @@
+# a. Import Libraries
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils.class_weight import compute_class_weight
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+from keras.optimizers import Adam
+from keras.callbacks import EarlyStopping
+import matplotlib.pyplot as plt
+
+
+#b. Load Dataset
+
+# Upload the file
+from google.colab import files
+uploaded = files.upload()
+
+
+# Load the dataset
+import pandas as pd
+data = pd.read_csv('dataset.csv')  
+X = data.drop('target', axis=1)
+y = data['target']
+df.head()
+
+
+# c. Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+
+# d. Feature scaling
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# e. Compute class weights (handling class imbalance)
+class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+class_weight_dict = {0: class_weights[0], 1: class_weights[1]}
+print(f"Class weights: {class_weight_dict}")
+
+
+
+# f. Build model
+model = Sequential()
+
+# Input layer and first hidden layer
+model.add(Dense(64, input_dim=X_train.shape[1], activation='relu'))
+model.add(Dropout(0.3))
+
+# Second hidden layer
+model.add(Dense(32, activation='relu'))
+model.add(Dropout(0.2))
+
+# Output layer
+# Using sigmoid activation because this is a binary classification problem
+# Sigmoid outputs probabilities between 0-1 which is perfect for binary classification
+model.add(Dense(1, activation='sigmoid'))
+
+# Compile the model
+optimizer = Adam(learning_rate=0.001)
+model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
+
+# Early stopping to prevent overfitting
+early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+
+# Train the model
+history = model.fit(
+    X_train, y_train,
+    validation_split=0.2,
+    epochs=100,
+    batch_size=32,
+    class_weight=class_weight_dict,
+    callbacks=[early_stopping],
+    verbose=1
+)
+
+# Evaluate the model
+loss, accuracy = model.evaluate(X_test, y_test)
+print(f"Test Accuracy: {accuracy*100:.2f}%")
+
+# Plot training history
+plt.figure(figsize=(12, 4))
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'], label='Train Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.title('Model Accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend()
+
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Model Loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend()
+plt.show()
+
+# Make predictions
+y_pred = (model.predict(X_test) > 0.5).astype("int32")
+
+# Classification report
+from sklearn.metrics import classification_report
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
